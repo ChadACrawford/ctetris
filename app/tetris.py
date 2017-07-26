@@ -50,6 +50,7 @@ class Game:
         for event in pygame.event.get():
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_UP:
+                    self.score.hard_drop(min(10 - self.tetro.y, 12))
                     self.tetro.try_fast_fall(grid)
                 elif event.key == pygame.K_LEFT:
                     self.tetro.try_left(grid)
@@ -86,7 +87,6 @@ class Game:
         while True:
             self.clock.tick(60)
             self.grid.update()
-            self.score.update()
             self.tetro_step()
             pygame.display.flip()
 
@@ -130,7 +130,7 @@ class QueueComponent(Component):
     cell_height = BLOCK_HEIGHT * 4 + 4
     def __init__(self, game):
         super().__init__(game, False)
-        self._rect = pygame.Rect(430, 16,
+        self._rect = pygame.Rect(480, 16,
                                  self.BLOCK_WIDTH * 4 + 10,
                                  self.BLOCK_HEIGHT * 4 * 3 + 10 + 28)
         self._queue = TetrominoShape.shuffle()
@@ -163,8 +163,6 @@ class QueueComponent(Component):
         screen.fill(BACKGROUND_COLOR, (self.left + 2, self.queue_block_top + 2, self.cell_width, self.cell_height * 2 + 2))
 
     def draw(self):
-        cell_width = self.BLOCK_WIDTH * 4
-        cell_height = self.BLOCK_HEIGHT * 4
         bw = self.BLOCK_WIDTH
         bh = self.BLOCK_HEIGHT
         screen = self._game.screen
@@ -178,26 +176,18 @@ class QueueComponent(Component):
             top = self.queue_block_top + 4 + (self.cell_height + 2) * i
             image = shape.cropped_image(block_width=bw, block_height=bh)
             blit_center(screen, image, self.left + 4, top, self.cell_width-4, self.cell_height-4)
-        #     top = self._rect.top + 2 + 28 + (cell_height + 2) * i
-        #     image = shape.cropped_image(block_width=bw, block_height=bh)
-        #     left_offset = (cell_width - image.get_width()) / 2
-        #     top_offset = (cell_height - image.get_height()) / 2
-        #     screen.blit(image, (left + left_offset, top + top_offset))
-
 
 class HoldComponent(Component):
     def __init__(self, game):
         super().__init__(game)
-        self._rect = pygame.Rect(20, 20, 90, 90)
+        self._rect = pygame.Rect(20, 20, 120, 120)
         self._hold = None
 
     def draw(self):
         (left, top) = (self._rect.left + 2, self._rect.top + 2)
-        image = self._hold.cropped_image(block_width=20, block_height=20)
+        image = self._hold.cropped_image(block_width=29, block_height=29)
         screen = self._game.screen
-        left_offset = (86 - image.get_width()) / 2
-        top_offset = (86 - image.get_height()) / 2
-        screen.blit(image, (left + left_offset, top + top_offset))
+        blit_center(screen, image, left, top, 116, 116)
 
     def push(self, tetro):
         old = self._hold
@@ -208,7 +198,7 @@ class HoldComponent(Component):
 class GridComponent(Component):
     def __init__(self, game):
         super().__init__(game)
-        self._rect = pygame.Rect(120, 20, 300, 600)
+        self._rect = pygame.Rect(160, 20, 300, 600)
         self._grid = np.zeros((10, 22), dtype='int32')
         self._tetro = None
 
@@ -232,21 +222,52 @@ class GridComponent(Component):
         self.check_line()
 
     def check_line(self):
+        num_lines = 0
         for j in range(self._grid.shape[1]):
             if np.all(self._grid[:,j]):
+                num_lines += 1
                 self._grid[:,1:(j+1)] = self._grid[:,:j]
                 self._grid[:,0] = 0
+        self._game.score.clear(num_lines)
 
 
 class ScoreComponent(Component):
     def __init__(self, game):
         super().__init__(game)
-        self._rect = pygame.Rect(20, 100, 90, 20)
+        self._rect = pygame.Rect(20, 180, 120, 30)
         self._score = 0
+        self._combo = []
+
+    def clear(self, num_lines):
+        if num_lines <= 0:
+            self._combo = []
+            return
+        self._combo += [num_lines]
+        score = 0
+        if num_lines == 1:
+            score = 200
+        elif num_lines == 2:
+            score = 400
+        elif num_lines == 3:
+            score = 800
+        elif num_lines == 4:
+            score = 1200
+        score += int(sum(self._combo[:-1]) / 2)
+        self._score += score
+        self.update()
+
+    def hard_drop(self, y):
+        self._score += y * 5
+        self.update()
+
+    def reset(self):
+        title_txt = font.render("Score", True, WHITE)
+        self._game.screen.blit(title_txt, (self._rect.left + 5, self._rect.top - 20))
+        super().reset()
 
     def draw(self):
-        score_txt = font.render("Score: {}".format(self._score), True, WHITE)
-        self._game.screen.blit(score_txt, (self._rect.left, self._rect.top))
+        score_txt = font.render("{:012d}".format(self._score), True, WHITE)
+        self._game.screen.blit(score_txt, (self._rect.left + 5, self._rect.top + 5))
 
 
 def draw_mat(b, c, w, h):
