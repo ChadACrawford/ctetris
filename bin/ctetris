@@ -1,0 +1,16 @@
+#!/bin/bash
+
+echo "WARNING! This command disables access control in xhost,"
+echo "allowing the container to connect to your display."
+echo "If I'm not trustworthy, I could apparently do some"
+echo "suspicious things like logging keystrokes or whatever."
+echo
+echo "Are you certain you want to continue (y/n)?"
+read answer
+if echo "$answer" | grep -iq "^y" ; then
+    xhost +
+    docker run -it --rm \
+           -v /tmp/.X11-unix:/tmp/.X11-unix \
+           -e DISPLAY=unix$DISPLAY \
+           cacrawford/tetris python /app/tetris.py
+fi
