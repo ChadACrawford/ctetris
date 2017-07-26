@@ -1,8 +1,5 @@
 FROM python:3.6-slim
 
-ADD app /app
-ADD requirements.txt /requirements.txt
-
 # From https://hub.docker.com/r/jamesanglin/numpy-scipy/
 RUN apt-get update &&\
     apt-get install -y \
@@ -25,4 +22,8 @@ RUN apt-get update &&\
     libsdl-ttf2.0-dev \
     && rm -rf /var/lib/apt/lists/*
 
+ADD requirements.txt /requirements.txt
+
 RUN pip install -r requirements.txt
+
+ADD app /app

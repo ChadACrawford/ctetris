@@ -32,7 +32,7 @@ font = pygame.font.SysFont("arial", 16)
 
 class Game:
     def __init__(self):
-        self.screen = pygame.display.set_mode((600, 660))
+        self.screen = pygame.display.set_mode((575, 640))
         self.screen.set_colorkey(COLORKEY)
         self.clock = pygame.time.Clock()
 
@@ -82,7 +82,7 @@ class Game:
     def run(self):
         self.hold.reset()
         self.queue.reset()
-        self.score.reset()
+        self.score.update()
         self.grid.reset()
         while True:
             self.clock.tick(60)
